@@ -11,7 +11,7 @@
 	import CategoryComponent from '$lib/components/Category.svelte';
 	import SearchBar from '$lib/components/SearchBar.svelte'; // Asumimos que ya existe (lo creamos antes)
 	import { flip } from 'svelte/animate';
-	import { PlusCircle, Settings, Download, Upload } from 'lucide-svelte';
+	import { PlusCircle, Settings, Download, Upload, Search as SearchIcon } from 'lucide-svelte';
 	import type { SortableEvent } from 'sortablejs';
 	import { sortable } from '$lib/actions/sortable'; // <-- Importar la acción
 	import { moveCategory } from '$lib/stores/linkStore'; // <-- Importar el helper
@@ -21,6 +21,122 @@
 
 	// Acceso reactivo al valor del store
 	const categories = categoriesStore; // Svelte automáticamente subscribe/unsubscribe con el $
+
+    // --- Estado para el motor de búsqueda seleccionado ---
+    type SearchEngineKey = 
+        | 'google'
+        | 'duckduckgo'
+        | 'bing'
+        | 'youtube'
+        | 'wikipedia'
+        | 'amazon'
+        | 'mercadolibre' // (Añadiremos Argentina como ejemplo, se puede generalizar)
+        | 'github'
+        | 'stackoverflow';
+    let selectedSearchEngine: SearchEngineKey = 'google'; // Google por defecto
+
+    interface SearchEngineDetails {
+        baseUrl: string;
+        queryParam: string;
+        placeholder: string;
+        name: string; // Nombre para mostrar en el dropdown
+    }
+
+    const searchEngines: Record<SearchEngineKey, SearchEngineDetails> = {
+        google: {
+            baseUrl: 'https://www.google.com/search',
+            queryParam: 'q',
+            placeholder: 'Buscar en Google...',
+            name: 'Google'
+        },
+        duckduckgo: {
+            baseUrl: 'https://duckduckgo.com/',
+            queryParam: 'q',
+            placeholder: 'Buscar en DuckDuckGo...',
+            name: 'DuckDuckGo'
+        },
+        bing: {
+            baseUrl: 'https://www.bing.com/search',
+            queryParam: 'q',
+            placeholder: 'Buscar en Bing...',
+            name: 'Bing'
+        },
+        youtube: {
+            baseUrl: 'https://www.youtube.com/results',
+            queryParam: 'search_query',
+            placeholder: 'Buscar en YouTube...',
+            name: 'YouTube'
+        },
+        wikipedia: {
+            baseUrl: 'https://es.wikipedia.org/w/index.php', // Ejemplo para Wikipedia en Español
+            queryParam: 'search',
+            placeholder: 'Buscar en Wikipedia (ES)...',
+            name: 'Wikipedia (ES)'
+        },
+        amazon: { // Amazon.com (USA) como ejemplo, necesitarías el dominio local para otros países
+            baseUrl: 'https://www.amazon.com/s',
+            queryParam: 'k',
+            placeholder: 'Buscar en Amazon.com...',
+            name: 'Amazon.com'
+        },
+        mercadolibre: { // MercadoLibre Argentina como ejemplo
+            baseUrl: 'https://listado.mercadolibre.com.ar/', // El query va directo en la URL path
+            queryParam: '_Desde', // Este es más para paginación, el query real es parte del path
+                                   // Necesitamos una forma de construir la URL diferente para ML
+            placeholder: 'Buscar en MercadoLibre (AR)...',
+            name: 'MercadoLibre AR'
+            // Nota: MercadoLibre es un poco diferente, ver abajo.
+        },
+        github: {
+            baseUrl: 'https://github.com/search',
+            queryParam: 'q',
+            placeholder: 'Buscar en GitHub...',
+            name: 'GitHub'
+        },
+        stackoverflow: {
+            baseUrl: 'https://stackoverflow.com/search',
+            queryParam: 'q',
+            placeholder: 'Buscar en Stack Overflow...',
+            name: 'Stack Overflow'
+        }
+    };
+
+    let webSearchTerm = '';
+
+    // Para MercadoLibre, la URL de búsqueda es diferente
+    // ej. https://listado.mercadolibre.com.ar/QUERY_AQUI
+    // Así que necesitamos ajustar la acción del formulario o la construcción de la URL.
+
+    // Variable reactiva para la acción del formulario
+    $: formActionUrl = selectedSearchEngine === 'mercadolibre'
+        ? searchEngines.mercadolibre.baseUrl // Para ML, el query irá al final
+        : searchEngines[selectedSearchEngine].baseUrl;
+
+    // Nombre del input, también dinámico
+    $: queryInputName = selectedSearchEngine === 'mercadolibre'
+        ? 'as_word' // MercadoLibre usa 'as_word' como parámetro si se envía como query,
+                      // pero es más común que el término sea parte de la ruta.
+                      // Para simplificar, mantendremos la lógica de queryParam para los otros.
+                      // Para ML, la forma más fácil es que el usuario escriba y el form action cambie.
+        : searchEngines[selectedSearchEngine].queryParam;
+
+    // Placeholder dinámico
+    $: currentPlaceholder = searchEngines[selectedSearchEngine].placeholder;
+
+
+    // Función para construir la URL final, especialmente para MercadoLibre
+    function getSearchUrl() {
+        const engine = searchEngines[selectedSearchEngine];
+        if (selectedSearchEngine === 'mercadolibre') {
+            // Para ML, el término de búsqueda se añade directamente a la URL base,
+            // reemplazando espacios con guiones.
+            return `${engine.baseUrl}${encodeURIComponent(webSearchTerm.trim().replace(/\s+/g, '-'))}`;
+        } else {
+            // Para otros motores, se usa la URL base y se añade el parámetro de consulta.
+            // El formulario se encargará de añadir "?queryParam=value"
+            return engine.baseUrl;
+        }
+    }
 
     // --- Lógica de Fuse.js ---
 
@@ -431,8 +547,8 @@ function hasMatchingChildWithFuse(
 >
 	<main class="max-w-5xl mx-auto">
 		<!-- --- H1 CON LOGO (IMG) Y TEXTO OCULTO --- -->
-		<h1 class="mb-10 text-center">
-			<span class="sr-only">Smart Start V2</span> <!-- Texto para accesibilidad -->
+		<h1 class="mb-6 text-center">
+			<span class="sr-only">Smart Start</span> <!-- Texto para accesibilidad -->
 			<img
 			   src="/smart-start-logo.svg" 
 			   alt=""
@@ -442,10 +558,65 @@ function hasMatchingChildWithFuse(
 			   aria-hidden="true"
 			/>
 		  </h1>
-		  <!-- --- FIN H1 CON LOGO --- -->
+        
+        <!-- --- NUEVA SECCIÓN: BUSCADOR WEB --- -->
+        <div class="mb-8 px-4 sm:px-0">
+            <form
+                action={getSearchUrl()}
+                method="GET"
+                target="_blank"
+                class="flex items-center gap-2 max-w-xl mx-auto"
+                on:submit={() => {
+                    // Para MercadoLibre, si el input se llama 'as_word', el form lo añade.
+                    // Si no, y el form action ya contiene el término, no necesitamos hacer nada especial.
+                    // Si el action es solo la base URL para ML, necesitamos asegurarnos que el query
+                    // se envíe correctamente. El método más simple es que el 'action' cambie dinámicamente
+                    // o que el 'name' del input sea el correcto.
+                    // La solución getSearchUrl() para el action ya lo maneja para ML.
+                }}
+            >
+                <!-- Selector de Motor de Búsqueda (Dropdown) -->
+                <select
+                    bind:value={selectedSearchEngine}
+                    class="p-2.5 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
+                           bg-white border border-r-0 border-slate-300 text-slate-700
+                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+                    title="Seleccionar motor de búsqueda"
+                >
+                    {#each Object.entries(searchEngines) as [key, engine]}
+                        <option value={key}>{engine.name}</option>
+                    {/each}
+                </select>
+
+                <input
+                    type="text"
+                    name={queryInputName}
+                    bind:value={webSearchTerm}
+                    placeholder={currentPlaceholder}
+                    required
+                    class="flex-grow p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
+                           bg-white border border-slate-300 text-slate-900 placeholder-slate-400
+                           dark:bg-slate-700 dark:border-slate-600 dark:text-gray-100 dark:placeholder-gray-400"
+                />
+                <button
+                    type="submit"
+                    class="p-2.5 rounded-r-md transition-colors
+                           bg-blue-600 hover:bg-blue-700 text-white
+                           dark:bg-blue-500 dark:hover:bg-blue-600
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                           focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800"
+                    aria-label="Buscar"
+                    title="Buscar"
+                >
+                    <SearchIcon size={20} />
+                </button>
+            </form>
+        </div>
 
 		<!-- Barra de búsqueda (la funcionalidad se añadirá después) -->
-		<SearchBar bind:inputElement={searchBarInput} />
+		<div class="px-4 sm:px-0">
+		    <SearchBar bind:inputElement={searchBarInput} />
+        </div>
 
 		<!-- Sección de Categorías -->
 		<div class="mt-10">
