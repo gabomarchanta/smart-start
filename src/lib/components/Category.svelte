@@ -11,7 +11,7 @@
     import { sortable } from '$lib/actions/sortable'; // Importar acción
     import { searchTerm } from '$lib/stores/searchStore'; // Importar para deshabilitar drag
     import { flip } from 'svelte/animate';
-    import { moveLink } from '$lib/stores/linkStore';
+    import { moveLink, moveLinkBetweenLists } from '$lib/stores/linkStore';
     import { escape } from '$lib/actions/escapeHandler';
     import IconPicker from './IconPicker.svelte';
     import { lucideIcons } from '$lib/icons/lucideIconMap';
@@ -90,13 +90,36 @@
 
     // --- Handler para reordenar enlaces directos ---
     function handleDirectLinkSort(event: SortableEvent) {
-        if (event.oldIndex !== undefined && event.newIndex !== undefined) {
-            if (browser) {
-                // Llamar a moveLink con el ID de *esta* categoría y tipo 'category'
-                moveLink(category.id, 'category', event.oldIndex, event.newIndex);
-            }
+        if (event.oldIndex === undefined || event.newIndex === undefined || !event.item.dataset.linkId) return;
+        if (!browser) return;
+
+        const linkId = event.item.dataset.linkId;
+        const fromList = event.from as HTMLElement;
+        const toList = event.to as HTMLElement;
+
+        const originalParentId = fromList.dataset.parentId;
+        const originalParentType = fromList.dataset.parentType as 'category' | 'subcategory';
+        const newParentId = toList.dataset.parentId;
+        const newParentType = toList.dataset.parentType as 'category' | 'subcategory';
+
+        if (!originalParentId || !originalParentType || !newParentId || !newParentType) {
+            console.error('Drag&Drop: Missing parent data attributes on lists.');
+            return;
+        }
+
+        if (fromList === toList) {
+            // Reordenar dentro de la misma lista de enlaces directos de ESTA categoría
+            moveLink(category.id, 'category', event.oldIndex, event.newIndex);
         } else {
-            console.warn('Sortable event missing indices:', event);
+            // Mover a una lista diferente (podría ser otra categoría o una subcategoría)
+            moveLinkBetweenLists(
+                linkId,
+                originalParentId,
+                originalParentType,
+                newParentId,
+                newParentType,
+                event.newIndex
+            );
         }
     }
 
@@ -158,9 +181,17 @@ dark:bg-slate-800/60 dark:border-transparent
             {#if !isEditing}
                 <!-- Icono de Categoría (Modo Vista) -->
                 {#if category.icon && lucideIcons[category.icon as LucideIconName]}
-                    <!-- ... -->
+                    {@const IconComponent = lucideIcons[category.icon as LucideIconName]}
+                    <svelte:component
+                        this={IconComponent}
+                        size={20}
+                        class="mr-2 text-blue-600 dark:text-blue-400 flex-shrink-0 group-hover:text-blue-500 dark:group-hover:text-blue-300"
+                    />
                 {:else}
-                    <Folder size={20} class="mr-2 text-blue-600 ... flex-shrink-0"/>
+                    <Folder
+                        size={20}
+                        class="mr-2 text-blue-600 dark:text-blue-400 flex-shrink-0 group-hover:text-blue-500 dark:group-hover:text-blue-300 {isEditing ? 'opacity-50' : ''}"
+                    />
                 {/if}
                 <!-- Título H2 (Modo Vista) -->
                 <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-300">
@@ -233,7 +264,7 @@ dark:bg-slate-800/60 dark:border-transparent
             >
 				{#each category.subcategories as subcat (subcat.id)}
 					<!-- ¡Pasar categoryId a Subcategory! -->
-                    <div animate:flip={{ duration: 500 }}>
+                    <div animate:flip={{ duration: 300 }}>
                         <div class="relative">
 					        <Subcategory subcategory={subcat} categoryId={category.id} />
                             {#if !$searchTerm.trim()}
@@ -255,7 +286,7 @@ dark:bg-slate-800/60 dark:border-transparent
         {#if showAddSubcategoryForm}
             <form
                 use:escape={cancelAddSubcategoryForm}
-                transition:slide={{ duration: 500 }}
+                transition:slide={{ duration: 300 }}
                 on:submit|preventDefault={handleAddSubcategory}
                 class="mb-4 pl-4 ml-1 flex gap-2 items-center"
             >
@@ -283,15 +314,20 @@ dark:bg-slate-800/60 dark:border-transparent
 				<div
                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
                     use:sortable={{ 
-                        group: `links-category-${category.id}`, 
+                        group: `shared-links`, 
                         handle: '.link-drag-handle', 
                         onSort: handleDirectLinkSort,
                         disabled: !!$searchTerm.trim()
                         }}
+                    class:opacity-70={$searchTerm.trim()}
+                    class:cursor-not-allowed={$searchTerm.trim()}
+                    inert={!!$searchTerm.trim() || undefined}
+                    data-parent-id={category.id}
+                    data-parent-type="category"                    
                 >
 					{#each category.links as link (link.id)}
 						<!-- ¡Pasar parentId y parentType a LinkItem! -->
-                        <div animate:flip={{ duration: 500 }} class="min-w-0">
+                        <div animate:flip={{ duration: 300 }} class="min-w-0" data-link-id={link.id}>
                             <div class="relative">
 						        <LinkItem {link} parentId={category.id} parentType="category" />
                                 {#if !$searchTerm.trim()}
@@ -314,7 +350,7 @@ dark:bg-slate-800/60 dark:border-transparent
         {#if showAddLinkForm}
             <form
                 use:escape={cancelAddDirectLinkForm}
-                transition:slide={{ duration: 500 }}
+                transition:slide={{ duration: 300 }}
                 on:submit|preventDefault={handleAddLink}
                 class="mt-3 pl-4 ml-1 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center border-l-2 border-dashed border-transparent"
             >

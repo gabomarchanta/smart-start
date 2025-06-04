@@ -376,6 +376,84 @@ export function moveLink(parentId: string, parentType: 'category' | 'subcategory
   );
 }
 
+export function moveLinkBetweenLists(
+    linkId: string,
+    originalParentId: string,
+    originalParentType: 'category' | 'subcategory',
+    newParentId: string,
+    newParentType: 'category' | 'subcategory',
+    newIndex: number // El índice donde se soltó en la nueva lista
+) {
+    categoriesStore.update(data => {
+        let linkToMove: Link | undefined;
+        let dataAfterRemoval = [...data]; // Empezar con una copia
+
+        // 1. Encontrar y Eliminar el enlace de la lista de origen
+        dataAfterRemoval = dataAfterRemoval.map(cat => {
+            let categoryModified = false;
+            let tempCat = { ...cat };
+
+            if (originalParentType === 'category' && cat.id === originalParentId) {
+                const linkIndex = tempCat.links.findIndex(l => l.id === linkId);
+                if (linkIndex > -1) {
+                    linkToMove = { ...tempCat.links[linkIndex] }; // Clonar el enlace
+                    tempCat.links = tempCat.links.filter(l => l.id !== linkId);
+                    categoryModified = true;
+                }
+            } else if (originalParentType === 'subcategory') {
+                let subModified = false;
+                tempCat.subcategories = tempCat.subcategories.map(sub => {
+                    if (sub.id === originalParentId) {
+                        const linkIndex = sub.links.findIndex(l => l.id === linkId);
+                        if (linkIndex > -1) {
+                            linkToMove = { ...sub.links[linkIndex] }; // Clonar
+                            return { ...sub, links: sub.links.filter(l => l.id !== linkId) };
+                        }
+                    }
+                    return sub;
+                });
+                // Verificar si alguna subcategoría realmente cambió
+                if (JSON.stringify(tempCat.subcategories) !== JSON.stringify(cat.subcategories)) {
+                    categoryModified = true;
+                }
+            }
+            return categoryModified ? tempCat : cat;
+        });
+
+        if (!linkToMove) {
+            console.error('Drag&Drop: Link to move not found in original location.');
+            return data; // No se encontró el enlace, devolver datos originales
+        }
+
+        // 2. Añadir el enlace a la lista de destino
+        const dataAfterInsertion = dataAfterRemoval.map(cat => {
+            let categoryModified = false;
+            let tempCat = { ...cat };
+
+            if (newParentType === 'category' && cat.id === newParentId) {
+                const newLinks = [...tempCat.links];
+                newLinks.splice(newIndex, 0, linkToMove as Link); // Insertar en la posición
+                tempCat.links = newLinks;
+                categoryModified = true;
+            } else if (newParentType === 'subcategory') {
+                tempCat.subcategories = tempCat.subcategories.map(sub => {
+                    if (sub.id === newParentId) {
+                        const newLinks = [...sub.links];
+                        newLinks.splice(newIndex, 0, linkToMove as Link);
+                        return { ...sub, links: newLinks };
+                    }
+                    return sub;
+                });
+                if (JSON.stringify(tempCat.subcategories) !== JSON.stringify(cat.subcategories)) {
+                    categoryModified = true;
+                }
+            }
+            return categoryModified ? tempCat : cat;
+        });
+
+        return dataAfterInsertion;
+    });
+}
 
 // --- Exportar el Store ---
 export default categoriesStore;

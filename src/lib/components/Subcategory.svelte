@@ -22,7 +22,7 @@
     import { flip } from 'svelte/animate';
 
 	import { sortable } from '$lib/actions/sortable';
-	import { moveLink } from '$lib/stores/linkStore'; // <-- Importar moveLink
+	import { moveLink, moveLinkBetweenLists } from '$lib/stores/linkStore'; // <-- Importar moveLink
     import { searchTerm } from '$lib/stores/searchStore'; // <-- Importar searchTerm
 
 	import { escape } from '$lib/actions/escapeHandler';
@@ -97,13 +97,36 @@
 
 	// --- Handler para reordenar enlaces dentro de la subcategoría ---
     function handleSubcategoryLinkSort(event: SortableEvent) {
-        if (event.oldIndex !== undefined && event.newIndex !== undefined) {
-            if (browser) {
-                // Llamar a moveLink con el ID de *esta* subcategoría y tipo 'subcategory'
-                moveLink(subcategory.id, 'subcategory', event.oldIndex, event.newIndex);
-            }
+        if (event.oldIndex === undefined || event.newIndex === undefined || !event.item.dataset.linkId) return;
+        if (!browser) return;
+
+        const linkId = event.item.dataset.linkId;
+        const fromList = event.from as HTMLElement;
+        const toList = event.to as HTMLElement;
+
+        const originalParentId = fromList.dataset.parentId;
+        const originalParentType = fromList.dataset.parentType as 'category' | 'subcategory';
+        const newParentId = toList.dataset.parentId;
+        const newParentType = toList.dataset.parentType as 'category' | 'subcategory';
+
+        if (!originalParentId || !originalParentType || !newParentId || !newParentType) {
+            console.error('Drag&Drop: Missing parent data attributes on lists.');
+            return;
+        }
+
+        if (fromList === toList) {
+            // Reordenar dentro de la misma lista de enlaces de ESTA subcategoría
+            moveLink(subcategory.id, 'subcategory', event.oldIndex, event.newIndex);
         } else {
-            console.warn('Sortable event missing indices:', event);
+            // Mover a una lista diferente
+            moveLinkBetweenLists(
+                linkId,
+                originalParentId,
+                originalParentType,
+                newParentId,
+                newParentType,
+                event.newIndex
+            );
         }
     }
 
@@ -224,15 +247,20 @@
 		<div
             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pl-4"
             use:sortable={{ 
-                group: `links-subcategory-${subcategory.id}`, 
+                group: `shared-links`, 
                 handle: '.link-drag-handle', 
                 onSort: handleSubcategoryLinkSort,
                 disabled: !!$searchTerm.trim() 
                 }}
+            class:opacity-70={$searchTerm.trim()}
+            class:cursor-not-allowed={$searchTerm.trim()}
+            inert={!!$searchTerm.trim() || undefined}
+            data-parent-id={subcategory.id}
+            data-parent-type="subcategory"
         >
 			{#each subcategory.links as link (link.id)}
 				<!-- Pasar props requeridas a LinkItem -->
-				<div animate:flip={{ duration: 500 }} class="min-w-0">
+				<div animate:flip={{ duration: 300 }} class="min-w-0" data-link-id={link.id}>
 					<div class="relative">
 						<LinkItem {link} parentId={subcategory.id} parentType="subcategory" />
 						{#if !$searchTerm.trim()}
@@ -258,7 +286,7 @@
 		{#if showAddLinkForm}
 			<form
 				use:escape={cancelAddLinkForm}
-                transition:slide={{ duration: 500 }}
+                transition:slide={{ duration: 300 }}
                 on:submit|preventDefault={handleAddLink}
                 class="mt-3 pl-4 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center"
             >

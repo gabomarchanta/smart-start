@@ -11,13 +11,14 @@
 	import CategoryComponent from '$lib/components/Category.svelte';
 	import SearchBar from '$lib/components/SearchBar.svelte'; // Asumimos que ya existe (lo creamos antes)
 	import { flip } from 'svelte/animate';
-	import { PlusCircle, Settings, Download, Upload, Search as SearchIcon } from 'lucide-svelte';
+	import { PlusCircle, Search as SearchIcon } from 'lucide-svelte';
 	import type { SortableEvent } from 'sortablejs';
 	import { sortable } from '$lib/actions/sortable'; // <-- Importar la acción
 	import { moveCategory } from '$lib/stores/linkStore'; // <-- Importar el helper
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import SaveIndicator from '$lib/components/SaveIndicator.svelte';
 	import { escape } from '$lib/actions/escapeHandler';
+    import SettingsDropdown from '$lib/components/SettingsDropdown.svelte';
 
 	// Acceso reactivo al valor del store
 	const categories = categoriesStore; // Svelte automáticamente subscribe/unsubscribe con el $
@@ -533,6 +534,13 @@ function hasMatchingChildWithFuse(
 			window.removeEventListener('keydown', handleGlobalKeyDown);
 		}
 	});
+
+
+    let fileInputForImport: HTMLInputElement; // Referencia al input file oculto
+
+    function triggerImportFileClick() {
+        fileInputForImport?.click();
+    }
 </script>
 
 <svelte:head>
@@ -546,18 +554,18 @@ function hasMatchingChildWithFuse(
     p-4 sm:p-8 transition-colors duration-300 ease-in-out"
 >
 	<main class="max-w-5xl mx-auto">
-		<!-- --- H1 CON LOGO (IMG) Y TEXTO OCULTO --- -->
-		<h1 class="mb-6 text-center">
-			<span class="sr-only">Smart Start</span> <!-- Texto para accesibilidad -->
-			<img
-			   src="/smart-start-logo.svg" 
-			   alt=""
-			   class="w-auto h-12 sm:h-16 mx-auto
-          		dark:filter dark:invert
-          		transition-all duration-300"
-			   aria-hidden="true"
-			/>
-		  </h1>
+		<!-- Header con Logo y Settings Dropdown -->
+        <header class="flex justify-between items-center mb-6">
+            <div class="w-1/3"></div>
+            <h1 class="text-center w-1/3">
+                <span class="sr-only">Smart Start V2</span>
+                <img src="/smart-start-logo.svg" alt="" class="w-auto h-12 sm:h-16 mx-auto dark:filter dark:invert transition-all duration-300" aria-hidden="true" />
+            </h1>
+            <div class="w-1/3 flex justify-end">
+                <SettingsDropdown onExportData={exportData} onImportDataRequest={triggerImportFileClick} />
+            </div>
+        </header>
+        <!-- Fin Header -->
         
         <!-- --- NUEVA SECCIÓN: BUSCADOR WEB --- -->
         <div class="mb-8 px-4 sm:px-0">
@@ -565,22 +573,14 @@ function hasMatchingChildWithFuse(
                 action={getSearchUrl()}
                 method="GET"
                 target="_blank"
-                class="flex items-center gap-2 max-w-xl mx-auto"
-                on:submit={() => {
-                    // Para MercadoLibre, si el input se llama 'as_word', el form lo añade.
-                    // Si no, y el form action ya contiene el término, no necesitamos hacer nada especial.
-                    // Si el action es solo la base URL para ML, necesitamos asegurarnos que el query
-                    // se envíe correctamente. El método más simple es que el 'action' cambie dinámicamente
-                    // o que el 'name' del input sea el correcto.
-                    // La solución getSearchUrl() para el action ya lo maneja para ML.
-                }}
+                class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl mx-auto"
             >
                 <!-- Selector de Motor de Búsqueda (Dropdown) -->
                 <select
                     bind:value={selectedSearchEngine}
                     class="p-2.5 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
                            bg-white border border-r-0 border-slate-300 text-slate-700
-                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
+                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 w-full sm:w-auto"
                     title="Seleccionar motor de búsqueda"
                 >
                     {#each Object.entries(searchEngines) as [key, engine]}
@@ -594,13 +594,13 @@ function hasMatchingChildWithFuse(
                     bind:value={webSearchTerm}
                     placeholder={currentPlaceholder}
                     required
-                    class="flex-grow p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
+                    class="flex-grow p-2 rounded-md sm:rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
                            bg-white border border-slate-300 text-slate-900 placeholder-slate-400
                            dark:bg-slate-700 dark:border-slate-600 dark:text-gray-100 dark:placeholder-gray-400"
                 />
                 <button
                     type="submit"
-                    class="p-2.5 rounded-r-md transition-colors
+                    class="p-2.5 rounded-md sm:rounded-r-md sm:rounded-l-none transition-colors
                            bg-blue-600 hover:bg-blue-700 text-white
                            dark:bg-blue-500 dark:hover:bg-blue-600
                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
@@ -691,44 +691,13 @@ function hasMatchingChildWithFuse(
 			</form>
 		</div>
 
-		<!-- --- Sección de Configuración: Importar/Exportar --- -->
-        <div class="mt-12 pt-6 border-t transition-colors border-slate-200 dark:border-slate-700">
-            <h2 class="text-xl font-semibold mb-4 text-center text-slate-700 dark:text-slate-300">
-                <Settings size={22} class="inline mr-2 align-text-bottom" />
-                Configuración
-            </h2>
-            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md mx-auto">
-                <!-- Botón Exportar -->
-                <button
-                    on:click={exportData}
-                    class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors
-                           bg-indigo-600 hover:bg-indigo-700 text-white
-                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-                           focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800"
-                >
-                    <Download size={18} />
-                    Exportar Datos
-                </button>
-
-                <!-- Botón Importar (usa un label para el input file) -->
-                <label
-                    class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-md font-medium transition-colors cursor-pointer
-                           bg-teal-600 hover:bg-teal-700 text-white
-                           focus-within:outline-none focus-within:ring-2 focus-within:ring-teal-500 focus-within:ring-offset-2
-                           focus-within:ring-offset-slate-100 dark:focus-within:ring-offset-slate-800"
-                >
-                    <Upload size={18} />
-                    Importar Datos
-                    <input
-                        type="file"
-                        accept=".json,application/json"
-                        class="hidden"
-                        on:change={importData}
-                    />
-                </label>
-            </div>
-        </div>
-        <!-- --- Fin Sección de Configuración --- -->
+		<input
+            type="file"
+            accept=".json,application/json"
+            class="hidden"
+            bind:this={fileInputForImport}
+            on:change={importData}
+        />
 	</main>
 
 	<footer class="text-center mt-16 text-sm flex justify-center items-center gap-4 transition-colors
