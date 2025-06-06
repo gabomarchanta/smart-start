@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { searchTerm } from '$lib/stores/searchStore'; // Importar el store
 	import { Search, X } from 'lucide-svelte'; // Añadir icono X para limpiar
+    import { t } from 'svelte-i18n';
 
     // No necesitamos una variable local, bindeamos directamente al store ($searchTerm)
     // let localSearchTerm = ''; // <- Eliminar si la tenías
@@ -22,7 +23,7 @@
 		type="search"
 		bind:value={$searchTerm}
 		bind:this={inputElement}
-		placeholder="Buscar enlaces por título o URL..."
+		placeholder={$t('search_placeholder_links')}
 		class="w-full pl-10 pr-10 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-150
             bg-white border-slate-300 text-slate-900 placeholder-slate-400
             dark:bg-slate-700 dark:border-slate-600 dark:text-gray-100 dark:placeholder-gray-400

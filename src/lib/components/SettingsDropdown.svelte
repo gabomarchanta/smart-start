@@ -5,6 +5,8 @@
 	import { onMount, onDestroy } from 'svelte';
     import ThemeToggle from './ThemeToggle.svelte';
     import { browser } from '$app/environment'; // <-- IMPORTAR 'browser'
+    import LanguageSwitcher from './LanguageSwitcher.svelte';
+    import { t } from 'svelte-i18n';
 
     export let onExportData: () => void;
     export let onImportDataRequest: () => void;
@@ -65,8 +67,14 @@
 			<div class="py-1" role="none">
 				<!-- Theme Toggle (usamos el componente) -->
                 <div class="px-4 py-2 text-sm text-slate-700 dark:text-slate-200 flex items-center justify-between">
-                    <span>Tema</span>
+                    <span>{$t('theme_label')}</span>
                     <ThemeToggle />
+                </div>
+
+                <!-- Language Switcher -->
+                <div class="px-4 py-2 text-sm text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                    <span>{$t('language_label')}</span>
+                    <LanguageSwitcher />
                 </div>
 
                 <div class="border-t border-slate-200 dark:border-slate-700 my-1"></div>
@@ -80,7 +88,7 @@
 					role="menuitem"
 				>
                     <Download size={16} />
-					Exportar Datos
+					{$t('export_data_button')}
 				</button>
 
 				<!-- Importar Datos -->
@@ -92,7 +100,7 @@
 					role="menuitem"
 				>
                     <Upload size={16} />
-					Importar Datos
+					{$t('import_data_button')}
 				</button>
                 <!-- Puedes añadir más opciones aquí -->
 			</div>

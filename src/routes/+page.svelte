@@ -19,9 +19,12 @@
 	import SaveIndicator from '$lib/components/SaveIndicator.svelte';
 	import { escape } from '$lib/actions/escapeHandler';
     import SettingsDropdown from '$lib/components/SettingsDropdown.svelte';
+    import { t } from 'svelte-i18n';
 
 	// Acceso reactivo al valor del store
 	const categories = categoriesStore; // Svelte automáticamente subscribe/unsubscribe con el $
+
+    
 
     // --- Estado para el motor de búsqueda seleccionado ---
     type SearchEngineKey = 
@@ -41,6 +44,7 @@
         queryParam: string;
         placeholder: string;
         name: string; // Nombre para mostrar en el dropdown
+        domainForFavicon: string;
     }
 
     const searchEngines: Record<SearchEngineKey, SearchEngineDetails> = {
@@ -48,59 +52,72 @@
             baseUrl: 'https://www.google.com/search',
             queryParam: 'q',
             placeholder: 'Buscar en Google...',
-            name: 'Google'
+            name: 'Google',
+            domainForFavicon: 'google.com'
         },
         duckduckgo: {
             baseUrl: 'https://duckduckgo.com/',
             queryParam: 'q',
             placeholder: 'Buscar en DuckDuckGo...',
-            name: 'DuckDuckGo'
+            name: 'DuckDuckGo',
+            domainForFavicon: 'duckduckgo.com'
         },
         bing: {
             baseUrl: 'https://www.bing.com/search',
             queryParam: 'q',
             placeholder: 'Buscar en Bing...',
-            name: 'Bing'
+            name: 'Bing',
+            domainForFavicon: 'bing.com'
         },
         youtube: {
             baseUrl: 'https://www.youtube.com/results',
             queryParam: 'search_query',
             placeholder: 'Buscar en YouTube...',
-            name: 'YouTube'
+            name: 'YouTube',
+            domainForFavicon: 'youtube.com'
         },
         wikipedia: {
             baseUrl: 'https://es.wikipedia.org/w/index.php', // Ejemplo para Wikipedia en Español
             queryParam: 'search',
             placeholder: 'Buscar en Wikipedia (ES)...',
-            name: 'Wikipedia (ES)'
+            name: 'Wikipedia (ES)',
+            domainForFavicon: 'es.wikipedia.org'
         },
         amazon: { // Amazon.com (USA) como ejemplo, necesitarías el dominio local para otros países
             baseUrl: 'https://www.amazon.com/s',
             queryParam: 'k',
             placeholder: 'Buscar en Amazon.com...',
-            name: 'Amazon.com'
+            name: 'Amazon.com',
+            domainForFavicon: 'amazon.com'
         },
         mercadolibre: { // MercadoLibre Argentina como ejemplo
             baseUrl: 'https://listado.mercadolibre.com.ar/', // El query va directo en la URL path
             queryParam: '_Desde', // Este es más para paginación, el query real es parte del path
                                    // Necesitamos una forma de construir la URL diferente para ML
             placeholder: 'Buscar en MercadoLibre (AR)...',
-            name: 'MercadoLibre AR'
+            name: 'MercadoLibre AR',
+            domainForFavicon: 'mercadolibre.com.ar'
             // Nota: MercadoLibre es un poco diferente, ver abajo.
         },
         github: {
             baseUrl: 'https://github.com/search',
             queryParam: 'q',
             placeholder: 'Buscar en GitHub...',
-            name: 'GitHub'
+            name: 'GitHub',
+            domainForFavicon: 'github.com'
         },
         stackoverflow: {
             baseUrl: 'https://stackoverflow.com/search',
             queryParam: 'q',
             placeholder: 'Buscar en Stack Overflow...',
-            name: 'Stack Overflow'
+            name: 'Stack Overflow',
+            domainForFavicon: 'stackoverflow.com'
         }
     };
+
+    function getFaviconUrl(domain: string, size: number = 16): string {
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+    }
 
     let webSearchTerm = '';
 
@@ -139,6 +156,7 @@
         }
     }
 
+    const engineName = searchEngines[selectedSearchEngine].name;
     // --- Lógica de Fuse.js ---
 
     // Preparamos una estructura de datos plana para las subcategorías y enlaces para Fuse
@@ -558,7 +576,7 @@ function hasMatchingChildWithFuse(
         <header class="flex justify-between items-center mb-6">
             <div class="w-1/3"></div>
             <h1 class="text-center w-1/3">
-                <span class="sr-only">Smart Start V2</span>
+                <span class="sr-only">{$t('app_title')}</span>
                 <img src="/smart-start-logo.svg" alt="" class="w-auto h-12 sm:h-16 mx-auto dark:filter dark:invert transition-all duration-300" aria-hidden="true" />
             </h1>
             <div class="w-1/3 flex justify-end">
@@ -573,38 +591,63 @@ function hasMatchingChildWithFuse(
                 action={getSearchUrl()}
                 method="GET"
                 target="_blank"
-                class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl mx-auto"
+                class="flex items-center gap-0 max-w-xl mx-auto"
             >
                 <!-- Selector de Motor de Búsqueda (Dropdown) -->
-                <select
-                    bind:value={selectedSearchEngine}
-                    class="p-2.5 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
-                           bg-white border border-r-0 border-slate-300 text-slate-700
-                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 w-full sm:w-auto"
-                    title="Seleccionar motor de búsqueda"
-                >
-                    {#each Object.entries(searchEngines) as [key, engine]}
-                        <option value={key}>{engine.name}</option>
-                    {/each}
-                </select>
-
+                <div class="relative flex-shrink-0 h-full">
+                    <select
+                        bind:value={selectedSearchEngine}
+                        class="appearance-none pl-8 pr-6 py-2.5
+                               border border-slate-300 dark:border-slate-600
+                               bg-white dark:bg-slate-700
+                               text-transparent dark:text-transparent
+                               focus:text-slate-700 dark:focus:text-slate-200
+                               focus:outline-none focus:ring-2 focus:ring-blue-500
+                               rounded-l-md h-full w-[56px]"
+                        title="Seleccionar motor de búsqueda"
+                        aria-label="Seleccionar motor de búsqueda"
+                        on:focus={(e) => e.currentTarget.style.color = ''}
+                        on:blur={(e) => {
+                            if (e.currentTarget.value === selectedSearchEngine) {
+                                e.currentTarget.style.color = 'transparent';
+                            }
+                        }}
+                    >
+                        {#each Object.entries(searchEngines) as [key, engine] (key)}
+                            <option value={key} class="text-slate-900 dark:text-slate-100">{engine.name}</option>
+                        {/each}                        
+                    </select>
+                    <!-- Icono del motor seleccionado (visible en móvil y escritorio) -->
+                    <div class="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none
+                        w-5 h-5 flex items-center justify-center">
+                        <img
+                            src={getFaviconUrl(searchEngines[selectedSearchEngine].domainForFavicon, 32)}
+                            alt=""
+                            class="w-full h-full object-contain"
+                            loading="lazy"
+                        />
+                    </div>
+                    <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 dark:text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
                 <input
                     type="text"
                     name={queryInputName}
                     bind:value={webSearchTerm}
-                    placeholder={currentPlaceholder}
+                    placeholder={$t('search_placeholder_web', { values: { engineName: searchEngines[selectedSearchEngine].name }})} 
                     required
-                    class="flex-grow p-2 rounded-md sm:rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors
-                           bg-white border border-slate-300 text-slate-900 placeholder-slate-400
-                           dark:bg-slate-700 dark:border-slate-600 dark:text-gray-100 dark:placeholder-gray-400"
+                    class="flex-grow p-2 border-y border-slate-300 dark:border-slate-600
+                   bg-white dark:bg-slate-700 text-slate-900 dark:text-gray-100
+                   placeholder-slate-400 dark:placeholder-gray-400
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 relative"
                 />
                 <button
                     type="submit"
-                    class="p-2.5 rounded-md sm:rounded-r-md sm:rounded-l-none transition-colors
-                           bg-blue-600 hover:bg-blue-700 text-white
-                           dark:bg-blue-500 dark:hover:bg-blue-600
-                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-                           focus:ring-offset-slate-100 dark:focus:ring-offset-slate-800"
+                    class="p-2.5 rounded-r-md border border-l-0 border-slate-300 dark:border-slate-600
+                   bg-blue-600 hover:bg-blue-700 text-white
+                   dark:bg-blue-500 dark:hover:bg-blue-600
+                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:z-10 relative"
                     aria-label="Buscar"
                     title="Buscar"
                 >

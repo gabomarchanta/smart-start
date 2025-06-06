@@ -321,7 +321,7 @@ dark:bg-slate-800/60 dark:border-transparent
                         }}
                     class:opacity-70={$searchTerm.trim()}
                     class:cursor-not-allowed={$searchTerm.trim()}
-                    inert={!!$searchTerm.trim() || undefined}
+                    
                     data-parent-id={category.id}
                     data-parent-type="category"                    
                 >

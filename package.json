@@ -42,6 +42,7 @@
 	"dependencies": {
 		"fuse.js": "^7.1.0",
 		"lucide-svelte": "^0.507.0",
-		"sortablejs": "^1.15.6"
+		"sortablejs": "^1.15.6",
+		"svelte-i18n": "^4.0.1"
 	}
 }

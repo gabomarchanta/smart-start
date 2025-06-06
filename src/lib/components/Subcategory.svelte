@@ -254,7 +254,7 @@
                 }}
             class:opacity-70={$searchTerm.trim()}
             class:cursor-not-allowed={$searchTerm.trim()}
-            inert={!!$searchTerm.trim() || undefined}
+            
             data-parent-id={subcategory.id}
             data-parent-type="subcategory"
         >
