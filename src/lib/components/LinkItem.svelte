@@ -16,6 +16,7 @@
     import { fade } from 'svelte/transition'; // Para aparecer/desaparecer
 
 	import { escape } from '$lib/actions/escapeHandler';
+	import { t } from 'svelte-i18n';
 
     // Estado para controlar el modo edición
 	let isEditing = false;
@@ -115,18 +116,18 @@
 		<!-- Botón Editar (aparece al hover) -->
 		<button
 			on:click={startEditing}
-			aria-label={`Editar ${link.title}`}
+			aria-label={`${$t('edit_button_title')} ${link.title}`}
 			class="absolute right-8 top-0 bottom-0 px-2 flex items-center justify-center text-slate-600 hover:text-yellow-600 dark:text-slate-500 dark:hover:text-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 focus:opacity-100"
-			title="Editar enlace"
+			title={$t('link.edit_button_title')}
 		>
 			<Pencil size={14} />
 		</button>
 		<!-- Botón Eliminar (aparece al hover) -->
 		<button
 			on:click={handleDelete}
-			aria-label={`Eliminar ${link.title}`}
+			aria-label={`${$t('delete_button_title')} ${link.title}`}
 			class="absolute right-0 top-0 bottom-0 px-2 flex items-center justify-center text-slate-600 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 focus:opacity-100"
-			title="Eliminar enlace"
+			title={$t('link.delete_button_title')}
 		>
 			<Trash2 size={14} />
 		</button>
@@ -143,7 +144,7 @@
             type="text"
             bind:value={editedTitle}
             required
-            placeholder="Título"
+            placeholder={$t('edit_link_title_placeholder')}
             class="w-full px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors
                    bg-white border border-slate-300 text-slate-900 placeholder-slate-400
                    dark:bg-slate-600 dark:border-slate-500 dark:text-gray-100 dark:placeholder-gray-400"
@@ -152,18 +153,18 @@
             type="text"
             bind:value={editedUrl}
             required
-            placeholder="URL"
+            placeholder={$t('edit_link_url_placeholder')}
             class="w-full px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors
                    bg-white border border-slate-300 text-slate-900 placeholder-slate-400
                    dark:bg-slate-600 dark:border-slate-500 dark:text-gray-100 dark:placeholder-gray-400"
 			pattern=".*\..*"
-			title="URL(ej: google.com)"
+			title={$t('add_link_url_placeholder')}
         />
         <div class="flex gap-2 justify-end flex-shrink-0">
-             <button type="submit" class="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-semibold disabled:opacity-50" disabled={!editedTitle.trim() || !editedUrl.trim()}>Guardar</button>
+             <button type="submit" class="px-2 py-1 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-semibold disabled:opacity-50" disabled={!editedTitle.trim() || !editedUrl.trim()}>{$t('save_button')}</button>
              <button type="button" on:click={cancelEditing} class="px-2 py-1 text-xs transition-colors
                         text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200
-             ">Cancelar</button>
+             ">{$t('cancel_button')}</button>
         </div>
     </form>
 {/if}

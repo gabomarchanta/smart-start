@@ -26,6 +26,7 @@
     import { searchTerm } from '$lib/stores/searchStore'; // <-- Importar searchTerm
 
 	import { escape } from '$lib/actions/escapeHandler';
+    import { t } from 'svelte-i18n';
 
 
 	// --- Props ---
@@ -190,17 +191,17 @@
         <div class="flex items-center ml-2 flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
             <button
                 on:click|stopPropagation={startEditing}
-                aria-label={`Editar subcategoría ${subcategory.title}`}
+                aria-label={`${$t('subcategory.edit_button_title')} ${subcategory.title}`}
                 class="p-1 rounded text-slate-600 hover:text-yellow-600 dark:text-slate-500 dark:hover:text-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                title="Editar subcategoría"
+                title={$t('subcategory.edit_button_title')}
              >
                 <Pencil size={14} />
             </button>
             <button
                 on:click|stopPropagation={handleDeleteSubcategory}
-                aria-label={`Eliminar subcategoría ${subcategory.title}`}
+                aria-label={`${$t('subcategory.delete_button_title')} ${subcategory.title}`}
                 class="p-1 rounded text-slate-600 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 focus:outline-none focus:ring-1 focus:ring-red-500"
-                title="Eliminar subcategoría"
+                title={$t('subcategory.delete_button_title')}
             >
                 <Trash2 size={14} />
             </button>
@@ -212,7 +213,7 @@
 					type="button"
 					on:click|stopPropagation={() => showIconPicker = true}
 					class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
-					title="Cambiar icono de subcategoría"
+					title={$t('change_icon_button_title')}
 				>
 					{#if editedIcon && lucideIcons[editedIcon]}
 						{@const CurrentEditIcon = lucideIcons[editedIcon]}
@@ -232,10 +233,10 @@
                     on:click|stopPropagation
                     on:keydown|stopPropagation
                 />
-                <button type="submit" class="px-1.5 py-0.5 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-semibold disabled:opacity-50" disabled={!editedTitle.trim()}>Ok</button>
+                <button type="submit" class="px-1.5 py-0.5 bg-green-600 hover:bg-green-700 rounded text-white text-xs font-semibold disabled:opacity-50" disabled={!editedTitle.trim()}>{$t('save_button')}</button>
                 <button type="button" on:click|stopPropagation={cancelEditing} class="px-1.5 py-0.5 text-xs transition-colors
                            text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200
-                ">X</button>
+                ">{$t('cancel_button')}</button>
             </form>
         {/if}
 		</div>
@@ -277,7 +278,7 @@
 			{:else}
 				{#if !showAddLinkForm}
 					<!-- Mensaje si no hay enlaces Y no se muestra el form -->
-					<p class="col-span-full text-sm italic transition-colors text-slate-400 dark:text-slate-500">Vacío</p>
+					<p class="col-span-full text-sm italic transition-colors text-slate-400 dark:text-slate-500">{$t('empty')}</p>
 				{/if}
 			{/each}
 		</div>
@@ -294,7 +295,7 @@
 				<input
 					type="text"
 					bind:value={newLinkTitle}
-					placeholder="Título enlace..."
+					placeholder={$t('add_link_title_placeholder')}
 					required
 					class="w-full sm:w-auto flex-grow px-2 py-1 transition-colors
                                bg-white border border-slate-300 text-slate-900 placeholder-slate-400
@@ -304,27 +305,27 @@
 				<input
 					type="text"
 					bind:value={newLinkUrl}
-					placeholder="URL"
+					placeholder={$t('add_link_url_placeholder_short')}
 					required
 					class="w-full sm:w-auto flex-grow px-2 py-1 transition-colors
                                 bg-white border border-slate-300 text-slate-900 placeholder-slate-400
                                 dark:bg-slate-700 dark:border-slate-600 dark:text-gray-100 dark:placeholder-gray-400
 								rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                     pattern=".*\..*"
-			        title="URL(ej: google.com)"
+			        title={$t('add_link_url_placeholder')}
 				/>
 				<div class="flex gap-2 justify-end sm:justify-start mt-1 sm:mt-0">
 					<button
 						type="submit"
 						class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs font-semibold disabled:opacity-50"
-						disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}>Guardar</button
+						disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}>{$t('save_button')}</button
 					>
 					<button
 						type="button"
 						on:click={() => (showAddLinkForm = false)}
 						class="px-2 py-1 text-xs transition-colors
                                 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200
-                    ">Cancelar
+                    ">{$t('cancel_button')}
 					</button>
 				</div>
 			</form>
@@ -338,7 +339,7 @@
 					class="flex items-center gap-1 text-sm transition-colors
                            text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300
                 ">
-					<LinkIcon size={14} /> Añadir Enlace Aquí
+					<LinkIcon size={14} /> {$t('add_link_here_button')}
 				</button>
 			{/if}
 		</div>

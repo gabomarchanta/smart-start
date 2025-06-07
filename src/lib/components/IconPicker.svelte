@@ -4,6 +4,7 @@
 	import { X as CloseIcon } from 'lucide-svelte';
 	import { lucideIcons, lucideIconNames } from '$lib/icons/lucideIconMap'; // Nuestros iconos y nombres
 	import type { LucideIconName } from '$lib/icons/lucideIconMap';
+	import { t } from 'svelte-i18n';
 
 	export let isOpen = false; // Controla la visibilidad del modal
 	export let selectedIcon: LucideIconName | undefined = undefined; // Icono actualmente seleccionado
@@ -64,7 +65,7 @@
 		tabindex="0"
 		on:click|self={closeModal} 
         on:keydown={handleOverlayKeyDown}
-		aria-label="Cerrar selector de iconos"
+		aria-label={$t('icon-picker-close-button-aria')}
 	>
 		<!-- Contenido del Modal -->
 		<div
@@ -80,12 +81,12 @@
 			<!-- Cabecera del Modal -->
 			<header class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
 				<h2 id="icon-picker-title" class="text-lg font-semibold text-slate-800 dark:text-slate-100">
-					Seleccionar Icono
+					{$t('icon_picker_title')}
 				</h2>
 				<button
 					on:click={closeModal}
 					class="p-1 rounded-full text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-					aria-label="Cerrar selector de iconos"
+					aria-label={$t('icon-picker-close-button-aria')}
 				>
 					<CloseIcon size={20} />
 				</button>
@@ -97,7 +98,7 @@
 					type="search"
 					bind:this={searchInput}
 					bind:value={searchTerm}
-					placeholder="Buscar icono por nombre..."
+					placeholder={$t('icon_picker_search_placeholder')}
 					class="w-full px-3 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500
                            bg-white border border-slate-300 text-slate-900 placeholder-slate-400
                            dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:placeholder-slate-400
@@ -127,7 +128,7 @@
 										? 'bg-blue-100 text-blue-600 dark:bg-blue-700/50 dark:text-blue-300 ring-2 ring-blue-500'
 										: 'bg-slate-50 dark:bg-slate-700/50'}"
 								title={iconName}
-								aria-label={`Seleccionar icono ${iconName}`}
+								aria-label={`${$t('icon_picker_title')} ${iconName}`}
 							>
 								{#if IconComponent}
 									<svelte:component this={IconComponent} size={36} />
@@ -140,7 +141,7 @@
 					</div>
 				{:else}
 					<p class="text-center text-slate-500 dark:text-slate-400 py-8">
-						No se encontraron iconos para "{searchTerm}".
+						{$t('icon_picker_no_results')}
 					</p>
 				{/if}
 			</div>
